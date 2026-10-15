@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Modul studi kasus interaktif Toksikologi Industri: pelarut organik — dari pajanan udara di pabrik percetakan sampai Nilai Ambang Batas.">
+<title>Pelarut Organik: Studi Kasus Toksikologi Industri</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='50,6 90,28 90,72 50,94 10,72 10,28' fill='%230e7490'/%3E%3Ccircle cx='50' cy='50' r='14' fill='%23f59e0b'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app" id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar" aria-label="Navigasi modul">
+    <div class="sidebar-head">
+      <div class="brand">
+        <svg class="brand-hex" viewBox="0 0 100 100" aria-hidden="true">
+          <polygon points="50,6 90,28 90,72 50,94 10,72 10,28" fill="none" stroke="currentColor" stroke-width="6"/>
+          <circle cx="50" cy="50" r="13" fill="var(--amber)"/>
+        </svg>
+        <div>
+          <div class="brand-title">Pelarut Organik</div>
+          <div class="brand-sub">Studi Kasus Toksikologi Industri</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-progress">
+      <div class="progress-row">
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <span class="progress-num" id="progressNum">0%</span>
+      </div>
+      <div class="progress-label" id="progressLabel">Belum dimulai</div>
+    </div>
+    <nav class="unit-nav" id="unitNav">
+      <!-- populated by app.js -->
+    </nav>
+    <div class="sidebar-foot">
+      <a href="#/referensi" class="foot-link" data-nav="referensi">Referensi</a>
+      <div class="foot-credit">Kesehatan Masyarakat<br>UPN Veteran Jakarta · TM 10</div>
+    </div>
+  </aside>
+  <div class="sidebar-scrim" id="sidebarScrim"></div>
+
+  <!-- Main -->
+  <main class="main" id="main">
+    <header class="topbar">
+      <button class="hamburger" id="btnMenu" aria-label="Buka navigasi">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-crumb" id="topbarCrumb"></div>
+      <button class="btn-reset" id="btnReset" title="Ulangi progres modul">&#8635; Atur ulang</button>
+    </header>
+    <div class="page" id="page">
+      <!-- routed content -->
+    </div>
+  </main>
+</div>
+
+<script src="assets/content.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
