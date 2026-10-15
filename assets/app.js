@@ -43,12 +43,14 @@
   function route() {
     const hash = location.hash.replace(/^#\/?/, "") || "";
     closeMenu();
+    closeGloss();
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
     const page = document.getElementById("page");
     const crumb = document.getElementById("topbarCrumb");
 
     if (!hash) { renderHome(page); crumb.innerHTML = "Beranda"; }
     else if (hash === "referensi") { renderRefs(page); crumb.innerHTML = "Referensi"; }
+    else if (hash === "kamus") { renderGlossary(page); crumb.innerHTML = "Kamus Istilah"; }
     else if (hash === "asesmen") { renderAssessment(page); crumb.innerHTML = "Asesmen Akhir"; }
     else {
       const m = hash.match(/^unit\/(\d+)$/);
@@ -79,6 +81,7 @@
     const aDone = unitDone("A");
     html += `<a class="nav-item ${aDone ? "done" : ""}" data-nav="asesmen" href="#/asesmen"><span class="n-ico">A</span> Asesmen Akhir<span class="n-check">✓</span></a>`;
     html += `<a class="nav-item" data-nav="referensi" href="#/referensi"><span class="n-ico">≡</span> Referensi</a>`;
+    html += `<a class="nav-item" data-nav="kamus" href="#/kamus"><span class="n-ico">Aa</span> Kamus Istilah</a>`;
     nav.innerHTML = html;
     // highlight active
     const path = location.hash.replace(/^#\/?/, "");
@@ -87,6 +90,7 @@
         (path === "" && a.getAttribute("href") === "#/") ||
         (path === "referensi" && a.getAttribute("href") === "#/referensi") ||
         (path === "asesmen" && a.getAttribute("href") === "#/asesmen") ||
+        (path === "kamus" && a.getAttribute("href") === "#/kamus") ||
         (path === "unit/" + (a.getAttribute("href") || "").split("/").pop() && a.getAttribute("href").startsWith("#/unit/"))
       );
     });
@@ -100,6 +104,97 @@
     const done = MODULE.units.filter(u => unitDone(u.id)).length + (unitDone("A") ? 1 : 0);
     document.getElementById("progressLabel").textContent =
       done === 0 ? "Belum dimulai" : done + " dari " + all + " bagian selesai";
+  }
+
+  /* ---------- Kamus istilah (hotspot) ---------- */
+  const GLOSS = MODULE.glossary || {};
+
+  // Ubah token {{slug}} di dalam teks menjadi tombol hotspot. Memakai
+  // <span role="button"> (bukan <button>) agar tetap legal di dalam tombol
+  // lain: pilihan kuis, chip match, judul accordion, flip-card, dsb.
+  function applyGlossary(root) {
+    if (!root || !Object.keys(GLOSS).length) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(n) {
+        if (n.nodeValue.indexOf("{{") < 0) return NodeFilter.FILTER_REJECT;
+        const p = n.parentElement;
+        return (p && p.closest("script,style,input,textarea,select")) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(n => {
+      const txt = n.nodeValue;
+      const frag = document.createDocumentFragment();
+      let last = 0, m;
+      const re = /\{\{([A-Za-z0-9-]+)\}\}/g;
+      while ((m = re.exec(txt))) {
+        if (m.index > last) frag.appendChild(document.createTextNode(txt.slice(last, m.index)));
+        const g = GLOSS[m[1].toLowerCase()];
+        if (g) {
+          const s = document.createElement("span");
+          s.className = "g";
+          s.setAttribute("role", "button");
+          s.setAttribute("tabindex", "0");
+          s.setAttribute("data-term", m[1].toLowerCase());
+          s.textContent = g.label;
+          frag.appendChild(s);
+        } else {
+          frag.appendChild(document.createTextNode(m[0]));
+        }
+        last = m.index + m[0].length;
+      }
+      if (last < txt.length) frag.appendChild(document.createTextNode(txt.slice(last)));
+      n.parentNode.replaceChild(frag, n);
+    });
+  }
+
+  /* ---------- Popup kamus ---------- */
+  let panelEl = null;
+  function glossPanel() {
+    if (!panelEl) {
+      panelEl = document.createElement("div");
+      panelEl.className = "gloss-panel";
+      panelEl.id = "glossPanel";
+      panelEl.setAttribute("role", "dialog");
+      panelEl.setAttribute("aria-label", "Kamus istilah");
+      panelEl.innerHTML =
+        '<div class="gp-head">' +
+          '<div class="gp-titles"><span class="gp-label"></span><span class="gp-en"></span></div>' +
+          '<button class="gp-close" type="button" aria-label="Tutup penjelasan">&times;</button>' +
+        '</div>' +
+        '<div class="gp-def"></div>' +
+        '<a class="gp-all" href="#/kamus">Seluruh kamus &rarr;</a>';
+      document.body.appendChild(panelEl);
+      panelEl.querySelector(".gp-close").addEventListener("click", closeGloss);
+    }
+    return panelEl;
+  }
+
+  function openGloss(key, anchor) {
+    const g = GLOSS[key];
+    if (!g) return;
+    const p = glossPanel();
+    p.querySelector(".gp-label").textContent = g.label;
+    p.querySelector(".gp-en").textContent = g.en || "";
+    p.querySelector(".gp-def").innerHTML = g.def || "";
+    p.dataset.term = key;
+    p.classList.add("open");
+    const mr = document.getElementById("main").getBoundingClientRect();
+    const r = anchor.getBoundingClientRect();
+    const pw = Math.min(380, mr.width - 24);
+    p.style.width = pw + "px";
+    const ph = p.offsetHeight;
+    let left = r.left + r.width / 2 - pw / 2;
+    left = Math.max(mr.left + 10, Math.min(left, mr.right - pw - 10));
+    let top = r.bottom + 8;
+    if (top + ph > window.innerHeight - 10) top = Math.max(10, r.top - ph - 8);
+    p.style.left = Math.round(left) + "px";
+    p.style.top = Math.round(top) + "px";
+  }
+
+  function closeGloss() {
+    if (panelEl) { panelEl.classList.remove("open"); panelEl.dataset.term = ""; }
   }
 
   /* ---------- Section renderers ---------- */
@@ -128,6 +223,7 @@
            <div class="nx-title">Asesmen Akhir — Kasus Progresif</div></div>
            <span class="btn btn-primary">Kerjakan →</span></a>`;
     page.innerHTML = html;
+    applyGlossary(page);
   }
 
   function renderSection(sec, u) {
@@ -327,12 +423,18 @@
     const card = root.querySelector(`[data-quizcard="${ownerId}"]`);
     if (!card) return;
     const body = card.querySelector("[data-qbody]");
-    let idx = 0, correct = 0;
+    const saved = state.quiz[ownerId];
+    const isDone = !!(saved && saved.done);
+    let correct = 0;
 
+    // Hanya menulis DOM. Penyambungannya dilakukan pemanggil — memanggil
+    // bindQuestion dari sini juga akan menyambungkan soal yang sama dua kali.
     function show(i) {
       body.innerHTML = `<div data-qform>${qHTML(questions, i, ownerId)}</div>`;
-      bindQuestion(i);
+      applyGlossary(body);
     }
+
+    function render(i) { show(i); bindQuestion(i); }
 
     function bindQuestion(i) {
       const q = questions[i];
@@ -353,16 +455,22 @@
           const ex = body.querySelector("[data-explain]");
           ex.innerHTML = `<div class="q-explain ${isRight ? "good" : "bad"}">
             <b>${isRight ? "✓ Benar." : "✗ Belum tepat."}</b> ${isRight ? q.explainGood : q.explainBad}</div>`;
+          applyGlossary(ex);
           scoreEl.textContent = `Soal ${i + 1} dari ${questions.length} · ${correct} benar`;
           btnNext.style.visibility = "visible";
           btnNext.textContent = i < questions.length - 1 ? "Selanjutnya →" : "Lihat skor →";
           btnNext.onclick = () => {
-            if (i < questions.length - 1) show(i + 1);
+            if (i < questions.length - 1) render(i + 1);
             else finish();
           };
           setTimeout(() => btnNext.scrollIntoView({ behavior: "smooth", block: "nearest" }), 60);
         });
       });
+    }
+
+    function bindRetake() {
+      const r = body.querySelector("[data-retake]");
+      if (r) r.addEventListener("click", () => { correct = 0; render(0); });
     }
 
     function finish() {
@@ -371,13 +479,15 @@
       const counter = card.querySelector("[data-counter]");
       counter.textContent = "Selesai — " + correct + "/" + questions.length + " benar";
       body.innerHTML = doneBanner({ done: true, correct, total: questions.length }, ownerId);
-      const retake = body.querySelector("[data-retake]");
-      if (retake) retake.addEventListener("click", () => { correct = 0; idx = 0; show(0); });
+      bindRetake();
       renderNav(); updateProgress();
     }
 
-    // If saved run exists, retake handled inside banner.
-    show(0);
+    // Kartu sudah berisi banner (kuis selesai, terbaca dari penyimpanan):
+    // cukup sambungkan tombol ulangi. Menulis ulang dengan show(0) akan
+    // menghapus banner, sehingga progress tampak hilang saat unit dibuka lagi.
+    if (isDone) bindRetake();
+    else render(0);
   }
 
   /* ---------- Home ---------- */
@@ -437,6 +547,7 @@
       </div>
     </div>`;
     page.innerHTML = html;
+    applyGlossary(page);
 
     // bind home quiz cards (none) — but bind any quizzes? home has none.
   }
@@ -451,8 +562,36 @@
         <div><div class="nx-label">Setelah selesai</div><div class="nx-title">Daftar Referensi</div></div>
         <span class="btn btn-ghost">Buka →</span></a>`;
     page.innerHTML = html;
+    applyGlossary(page);
     bindQuiz(page, "A", MODULE.assessment.questions);
   }
+
+  /* ---------- Halaman kamus ---------- */
+  function renderGlossary(page) {
+    const keys = Object.keys(GLOSS).sort((a, b) =>
+      GLOSS[a].label.localeCompare(GLOSS[b].label, "id", { sensitivity: "base" }));
+    const groups = {};
+    keys.forEach(k => {
+      const ch = (GLOSS[k].label.trim()[0] || "?").toUpperCase();
+      (groups[ch] = groups[ch] || []).push(k);
+    });
+    let html = `<div class="kicker">Rujukan</div>
+      <h1>Kamus Istilah</h1>
+      <p class="lead">${keys.length} istilah teknis yang dipakai modul ini. Di dalam unit dan asesmen istilah ini muncul seperti ini: <span class="g demo">cetak offset</span> &mdash; klik untuk membuka penjelasan singkat tanpa meninggalkan halaman.</p>
+      <div class="k-abs">`;
+    Object.keys(groups).sort().forEach(ch => {
+      html += `<h2 class="k-letter">${ch}</h2><div class="k-grid">`;
+      groups[ch].forEach(k => {
+        const g = GLOSS[k];
+        html += `<div class="k-card"><div class="k-top"><h3>${g.label}</h3><span class="k-en">${g.en || ""}</span></div><p>${g.def || ""}</p></div>`;
+      });
+      html += `</div>`;
+    });
+    html += `</div>`;
+    page.innerHTML = html;
+  }
+
+
 
   /* ---------- References ---------- */
   function renderRefs(page) {
@@ -461,6 +600,7 @@
       <p>Daftar pustaka modul. Kasus utama: Chouanière dkk. (2002). Angka-angka lain diverifikasi terhadap sumber berikut.</p>
       <ol class="ref-list">${MODULE.references.map(r => "<li>" + r + "</li>").join("")}</ol>
       <p class="small">Modul pengajaran — ${MODULE.meta.program}. Disusun untuk ${MODULE.meta.course}.</p>`;
+    applyGlossary(page);
   }
 
   /* ---------- Reveal animations ---------- */
@@ -518,6 +658,19 @@
     });
   }
 
+  /* ---------- Interaksi kamus (fase capture: memotong bubbling) ---------- */
+  document.addEventListener("click", e => {
+    const gl = e.target.closest && e.target.closest(".g[data-term]");
+    if (gl) {
+      e.preventDefault();
+      e.stopPropagation();
+      const same = panelEl && panelEl.classList.contains("open") && panelEl.dataset.term === gl.dataset.term;
+      if (same) closeGloss(); else openGloss(gl.dataset.term, gl);
+      return;
+    }
+    if (panelEl && panelEl.classList.contains("open") && !e.target.closest("#glossPanel")) closeGloss();
+  }, true);
+
   /* ---------- Global delegated interactions ---------- */
   document.addEventListener("click", e => {
     // reveal buttons
@@ -540,6 +693,13 @@
       ? document.activeElement : null;
     if (fc && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fc.classList.toggle("flipped"); }
   });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") { closeGloss(); return; }
+    const a = document.activeElement;
+    const gl = a && a.closest && a.closest(".g[data-term]");
+    if (gl && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openGloss(gl.dataset.term, gl); }
+  });
+
 
   /* ---------- Match logic ---------- */
   const matchSel = { L: null, R: null };
@@ -609,23 +769,26 @@
   });
 
   /* ---------- Quiz binding after route ---------- */
-  const origRoute = route;
-  // wrap route to bind quizzes post-render
+  // Kunci = elemen kartu kuis itu sendiri, bukan id unit: setiap kali halaman
+  // dirender ulang muncul elemen baru yang harus di-bind ulang. Guard berbasis
+  // dataset di #page tidak pernah dibersihkan sehingga kuis jadi mati saat
+  // pengguna kembali ke unit yang sudah dibuka sebelumnya.
+  const boundCards = new WeakSet();
   const obs = new MutationObserver(muts => {
     muts.forEach(m => {
-      if (m.target.id === "page") {
-        const page = m.target;
-        // unit quizzes
-        MODULE.units.forEach(u => {
-          if (page.querySelector(`[data-quizcard="${u.id}"]`) && !page.dataset["bound" + u.id]) {
-            const sec = u.sections.find(s => s.type === "quiz");
-            if (sec) { bindQuiz(page, u.id, sec.questions); page.dataset["bound" + u.id] = "1"; }
-          }
-        });
-        if (page.querySelector('[data-quizcard="A"]') && !page.dataset.boundA) {
-          bindQuiz(page, "A", MODULE.assessment.questions);
-          page.dataset.boundA = "1";
+      if (m.target.id !== "page") return;
+      const page = m.target;
+      MODULE.units.forEach(u => {
+        const card = page.querySelector(`[data-quizcard="${u.id}"]`);
+        if (card && !boundCards.has(card)) {
+          const sec = u.sections.find(s => s.type === "quiz");
+          if (sec) { bindQuiz(page, u.id, sec.questions); boundCards.add(card); }
         }
+      });
+      const cardA = page.querySelector('[data-quizcard="A"]');
+      if (cardA && !boundCards.has(cardA)) {
+        bindQuiz(page, "A", MODULE.assessment.questions);
+        boundCards.add(cardA);
       }
     });
   });

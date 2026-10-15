@@ -505,6 +505,62 @@ table.data tr.hot td{ background:#fffaf0; }
 .chip{ display:inline-block; font-size:11px; font-weight:700; background:var(--teal-tint); color:var(--teal-deep); border-radius:99px; padding:3px 11px; margin:0 4px 4px 0; }
 .chip.amber{ background:var(--amber-tint); color:var(--amber-deep); }
 
+/* ---------- Kamus istilah (hotspot) ---------- */
+.g{
+  border-bottom:1px dashed var(--teal);
+  color:var(--teal-deep);
+  cursor:pointer;
+  font-weight:600;
+  padding:0 1px;
+  border-radius:2px;
+  transition:background .18s ease, color .18s ease, border-color .18s ease;
+}
+.g:hover{ background:var(--teal-tint); border-bottom-style:solid; }
+.g:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; }
+.g.demo{ cursor:default; }
+
+/* popup penjelasan istilah */
+.gloss-panel{
+  position:fixed; left:0; top:0; z-index:90;
+  width:min(380px, calc(100vw - 24px));
+  background:var(--card); color:var(--ink);
+  border:1px solid var(--line); border-top:3px solid var(--teal);
+  border-radius:var(--radius);
+  box-shadow:0 18px 48px rgba(8,47,56,.22);
+  padding:14px 16px 13px;
+  opacity:0; visibility:hidden; transform:translateY(6px);
+  transition:opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
+}
+.gloss-panel.open{
+  opacity:1; visibility:visible; transform:none;
+  transition:opacity .18s ease, transform .18s ease, visibility 0s;
+}
+.gp-head{ display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; }
+.gp-titles{ flex:1; min-width:0; }
+.gp-label{ display:block; font-size:14.5px; font-weight:800; color:var(--teal-deep); line-height:1.25; }
+.gp-en{ display:block; font-size:11px; font-style:italic; color:var(--ink-faint); margin-top:2px; }
+.gp-close{
+  flex:0 0 auto; border:0; background:var(--paper); color:var(--ink-soft);
+  width:24px; height:24px; border-radius:99px; font-size:15px; line-height:1; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s ease, color .15s ease;
+}
+.gp-close:hover{ background:var(--teal-tint); color:var(--teal-deep); }
+.gp-def{ font-size:13px; line-height:1.55; color:var(--ink-soft); }
+.gp-all{ display:inline-block; margin-top:10px; font-size:11.5px; font-weight:700; color:var(--teal); text-decoration:none; }
+.gp-all:hover{ text-decoration:underline; }
+
+/* halaman kamus (#/kamus) */
+.k-letter{
+  font-size:12px; letter-spacing:.14em; color:var(--teal);
+  margin:26px 0 10px; padding-bottom:5px; border-bottom:1px solid var(--line);
+}
+.k-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:12px; }
+.k-card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:13px 15px; }
+.k-card h3{ font-size:13.5px; color:var(--teal-deep); margin:0; }
+.k-card .k-en{ display:inline-block; font-size:10.5px; font-style:italic; color:var(--ink-faint); margin-top:2px; }
+.k-card p{ margin:7px 0 0; font-size:12.5px; line-height:1.5; color:var(--ink-soft); }
+
 /* Scroll reveal */
 .sr{ opacity:0; transform:translateY(22px); }
 .sr.in{ animation:riseIn .65s cubic-bezier(.22,1,.36,1) forwards; }
