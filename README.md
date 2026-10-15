@@ -35,6 +35,12 @@ python -m http.server 8080
 # → http://localhost:8080
 ```
 
+## Menerbitkan ke GitHub Pages
+
+Cukup satu kali. Di halaman repositori: **Settings → Pages → Build and deployment → Source: *Deploy from a branch*** → pilih branch **`main`** dan path **`/`** → **Save**. Alamatnya lalu menjadi `https://rhrjagung-collab.github.io/case-study-organic-solvent/` (build biasanya 1–2 menit).
+
+Karena modul memakai router hash, tidak perlu konfigurasi `404.html`; setiap alamat (`/`, `/#/unit/5`, `/#/asesmen`) langsung valid dan bisa dibagikan maupun di-*bookmark*.
+
 ## Sumber angka
 
 Seluruh angka pada konten berasal dari artikel primer yang dikutip (lihat halaman Referensi) dan telah diverifikasi terhadap salinan di folder `REFERENCES/` bahan ajar TM-10. Catatan: abstrak Chouanière (2002) menyebut penurunan DSF 1 digit/40 ppm dan DSB 1 digit/25 ppm; bagian pembahasan artikel menyebut 36 ppm dan 26 ppm — modul menampilkan keduanya sebagai rentang 25–40 ppm.
